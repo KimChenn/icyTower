@@ -25,12 +25,12 @@
             x: canvas.width / 2,
             y: canvas.height - 150,
             width: 20,
-            height: 30, // Adjusted for new player representation
+            height: 30,
             speed: 5,
             velX: 0,
             velY: 0,
             jumping: false,
-            score: 0 // Initialize score
+            score: 0
         };
 
         // Platforms
@@ -40,7 +40,9 @@
                 x: Math.random() * (canvas.width - 50),
                 y: canvas.height - (100 * i) - 50,
                 width: 100,
-                height: 10
+                height: 10,
+                falling: false,
+                timeOnPlatform: 0 // Added to track time player stands on the platform
             });
         }
 
@@ -48,9 +50,9 @@
         let keys = [];
         window.addEventListener('keydown', function(e) {
             keys[e.keyCode] = true;
-            if (e.keyCode == 32 && !player.jumping) { // Space key for jump
+            if (e.keyCode == 32 && !player.jumping) {
                 player.jumping = true;
-                player.velY = baseJump - Math.abs(player.velX); // Higher jump if running faster
+                player.velY = baseJump - Math.abs(player.velX);
             }
         });
         window.addEventListener('keyup', function(e) {
@@ -78,7 +80,7 @@
 
             // Screen scroll
             if (player.y < canvas.height / 4) {
-                player.score += Math.abs(player.velY); // Increase score based on upward movement
+                player.score += Math.abs(player.velY);
                 player.y += Math.abs(player.velY);
                 platforms.forEach(platform => {
                     platform.y += Math.abs(player.velY);
@@ -102,7 +104,7 @@
                 player.velY = 0;
             }
 
-            // Platform collision
+            // Platform collision and fall logic
             platforms.forEach(platform => {
                 if (
                     player.x < platform.x + platform.width &&
@@ -114,20 +116,32 @@
                     player.jumping = false;
                     player.velY = 0;
                     player.y = platform.y - player.height;
+
+                    platform.timeOnPlatform += 1/60; // Update time on platform
+                    if (platform.timeOnPlatform >= 3) {
+                        platform.falling = true;
+                    }
+                } else {
+                    platform.timeOnPlatform = 0;
+                }
+
+                if (platform.falling) {
+                    platform.y += 5;
+                    if (platform.y > canvas.height) {
+                        platforms.splice(platforms.indexOf(platform), 1);
+                    }
                 }
             });
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw player as a small person
-            // Body
-            ctx.fillStyle = 'blue'; // Body color
-            ctx.fillRect(player.x, player.y + 10, player.width, player.height - 10); // Drawing the body
-            // Head
+            // Draw player
+            ctx.fillStyle = 'blue'; 
+            ctx.fillRect(player.x, player.y + 10, player.width, player.height - 10); 
             ctx.beginPath();
-            ctx.arc(player.x + player.width / 2, player.y + 5, 10, 0, Math.PI * 2, true); // Drawing the head as a circle
-            ctx.fillStyle = 'peachpuff'; // Head color
+            ctx.arc(player.x + player.width / 2, player.y + 5, 10, 0, Math.PI * 2, true);
+            ctx.fillStyle = 'peachpuff'; 
             ctx.fill();
 
             // Draw platforms
@@ -139,7 +153,7 @@
             // Display the score
             ctx.font = '16px Arial';
             ctx.fillStyle = 'black';
-            ctx.fillText('Score: ' + Math.floor(player.score), 10, 20); // Displaying the score on the canvas
+            ctx.fillText('Score: ' + Math.floor(player.score), 10, 20);
 
             requestAnimationFrame(updateGame);
         }
