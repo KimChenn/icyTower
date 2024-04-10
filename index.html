@@ -29,7 +29,8 @@
             speed: 5,
             velX: 0,
             velY: 0,
-            jumping: false
+            jumping: false,
+            score: 0 // Initialize score
         };
 
         // Platforms
@@ -77,6 +78,7 @@
 
             // Screen scroll
             if (player.y < canvas.height / 4) {
+                player.score += Math.abs(player.velY); // Increase score based on upward movement
                 player.y += Math.abs(player.velY);
                 platforms.forEach(platform => {
                     platform.y += Math.abs(player.velY);
@@ -133,6 +135,11 @@
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             });
+
+            // Display the score
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText('Score: ' + Math.floor(player.score), 10, 20); // Displaying the score on the canvas
 
             requestAnimationFrame(updateGame);
         }
