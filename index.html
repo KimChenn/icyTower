@@ -33,17 +33,36 @@
             score: 0
         };
 
+        // Enemies
+        const enemyTypes = ['Type1', 'Type2'];
+
         // Platforms
         let platforms = [];
         for(let i = 0; i < 2000; i++) {
-            platforms.push({
+            let platform = {
                 x: Math.random() * (canvas.width - 50),
                 y: canvas.height - (80 * i) - 50,
                 width: 100,
                 height: 10,
                 falling: false,
-                timeOnPlatform: 0 // Added to track time player stands on the platform
-            });
+                timeOnPlatform: 0, // Added to track time player stands on the platform
+                enemy: null // Added to track enemy on the platform
+            };
+
+            // 40% chance to have an enemy on the platform
+            if (Math.random() < 0.25) {
+                let type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+                platform.enemy = {
+                    type: type,
+                    x: platform.x + platform.width / 2,
+                    y: platform.y - 20,
+                    width: 20,
+                    height: 20,
+                    velX: type === 'Type2' ? 2 : 0, // Type2 enemy moves horizontally
+                };
+            }
+
+            platforms.push(platform);
         }
 
         // Key Listener
@@ -83,10 +102,15 @@
                 player.score += Math.abs(player.velY);
                 player.y += Math.abs(player.velY);
                 platforms.forEach(platform => {
-                    platform.y += Math.abs(player.velY);
+                    let deltaY = Math.abs(player.velY); // Change to keep enemy on platform
+                    platform.y += deltaY;
                     if (platform.y > canvas.height) {
-                        //platform.y = 0;
                         platform.x = Math.random() * (canvas.width - platform.width);
+                    }
+                    
+                    // If the platform has an enemy, move it along with the platform
+                    if (platform.enemy) {
+                        platform.enemy.y += deltaY; // Move the enemy with the platform
                     }
                 });
             }
@@ -131,6 +155,29 @@
                         platforms.splice(platforms.indexOf(platform), 1);
                     }
                 }
+
+                // Check enemy collision
+                if (platform.enemy) {
+                    let enemy = platform.enemy;
+                    if (
+                        player.x < enemy.x + enemy.width &&
+                        player.x + player.width > enemy.x &&
+                        player.y < enemy.y + enemy.height &&
+                        player.y + player.height > enemy.y
+                    ) {
+                        // Player collided with an enemy, reset the game
+                        alert('Game Over! You collided with an enemy.');
+                        window.location.reload();
+                    }
+
+                    // Move Type2 enemies horizontally
+                    if (enemy.type === 'Type2') {
+                        if (enemy.x <= platform.x || enemy.x + enemy.width >= platform.x + platform.width) {
+                            enemy.velX *= -1; // Reverse direction when reaching platform edges
+                        }
+                        enemy.x += enemy.velX;
+                    }
+                }
             });
 
             // Clear canvas
@@ -148,6 +195,13 @@
             platforms.forEach((platform, index) => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+
+                // Draw enemies
+                if (platform.enemy) {
+                    let enemy = platform.enemy;
+                    ctx.fillStyle = enemy.type === 'Type1' ? 'red' : 'green';
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                }
 
                 // Display platform number if index is divisible by 10
                 if (index % 10 === 0) {
