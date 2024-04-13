@@ -96,10 +96,11 @@
         // Platforms
         let platforms = [];
         for(let i = 0; i < 2000; i++) {
+            let platformWidth = Math.random() < 0.2 ? 150 : 100; // Wider platforms at 20% chance
             let platform = {
-                x: Math.random() * (canvas.width - 50),
+                x: Math.random() * (canvas.width - platformWidth),
                 y: canvas.height - (80 * i) - 50,
-                width: 100,
+                width: platformWidth,
                 height: 15,
                 falling: false,
                 timeOnPlatform: 0,
@@ -141,7 +142,7 @@
                 if (player.velX < player.speed) {
                     player.velX++;
                 }
-            }         
+            }
             if (keys[37]) {
                 if (player.velX > -player.speed) {
                     player.velX--;
@@ -283,10 +284,11 @@
             };
             platforms = [];
             for(let i = 0; i < 2000; i++) {
+                let platformWidth = Math.random() < 0.2 ? 150 : 100; // Wider platforms at 20% chance
                 let platform = {
-                    x: Math.random() * (canvas.width - 50),
+                    x: Math.random() * (canvas.width - platformWidth),
                     y: canvas.height - (80 * i) - 50,
-                    width: 100,
+                    width: platformWidth,
                     height: 15,
                     falling: false,
                     timeOnPlatform: 0,
