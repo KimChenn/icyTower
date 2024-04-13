@@ -57,6 +57,8 @@
         enemyImg1.src = './axe.png';
         const enemyImg2 = new Image();
         enemyImg2.src = './axe.png';
+        const starImg = new Image();
+        starImg.src = './star.png'; 
 
         let gameRunning = true;
         let animationFrameId;
@@ -64,7 +66,7 @@
         // Game settings
         const gravity = 0.5;
         const friction = 0.8;
-        const baseJump = -10; // Base jump velocity
+        const baseJump = -10;
 
         // Player setup
         let player = {
@@ -76,7 +78,8 @@
             velX: 0,
             velY: 0,
             jumping: false,
-            score: 0
+            score: 0,
+            starPower: false
         };
 
         // Platforms setup
@@ -95,7 +98,8 @@
                 moveSpeed: Math.random() * 0.5 + 0.5,
                 minY: null,
                 maxY: null,
-                direction: 1
+                direction: 1,
+                star: Math.random() < 0.05 ? { active: true } : null // 5% chance of a star
             };
             if (platform.moveUpDown) {
                 platform.minY = platform.y - 10;
@@ -121,7 +125,6 @@
             keys[e.keyCode] = true;
             if (e.keyCode == 32 && !player.jumping) { // Space key for jump
                 player.jumping = true;
-                // Enhance jump speed based on horizontal movement
                 player.velY = baseJump - Math.abs(player.velX);
             }
         });
@@ -141,19 +144,17 @@
                     player.velX--;
                 }
             } else {
-                player.velX *= friction; // Apply friction when no keys are pressed
+                player.velX *= friction;
             }
 
-            player.velY += gravity; // Apply gravity
+            player.velY += gravity;
             player.x += player.velX;
             player.y += player.velY;
 
-            // Screen scroll handling
             if (player.y < canvas.height / 4) {
                 let deltaY = canvas.height / 4 - player.y;
                 player.y = canvas.height / 4;
                 player.score += Math.floor(Math.abs(deltaY));
-
                 platforms.forEach(platform => {
                     platform.y += deltaY;
                     if (platform.enemy) {
@@ -162,7 +163,6 @@
                 });
             }
 
-            // Screen boundaries for player
             if (player.x >= canvas.width - player.width) {
                 player.x = canvas.width - player.width;
             } else if (player.x <= 0) {
@@ -176,6 +176,15 @@
             }
 
             platforms.forEach(platform => {
+                if (platform.star && platform.star.active && player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y + player.height > platform.y &&
+                    player.y + player.height < platform.y + platform.height) {
+                        platform.star.active = false; // Deactivate the star
+                        player.starPower = true; // Player has star power
+                        setTimeout(() => player.starPower = false, 8000); // Set invulnerability for 8 seconds
+                }
+
                 if (
                     player.x < platform.x + platform.width &&
                     player.x + player.width > platform.x &&
@@ -213,7 +222,9 @@
                         player.y < enemy.y + enemy.height &&
                         player.y + player.height > enemy.y
                     ) {
-                        gameOver();
+                        if (!player.starPower) {
+                            gameOver();
+                        }
                     }
                     if (enemy.type === 'Type2') {
                         if (enemy.x <= platform.x || enemy.x + enemy.width >= platform.x + platform.width) {
@@ -232,6 +243,9 @@
                     let enemy = platform.enemy;
                     let enemyImg = enemy.type === 'Type1' ? enemyImg1 : enemyImg2;
                     ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
+                }
+                if (platform.star && platform.star.active) {
+                    ctx.drawImage(starImg, platform.x + (platform.width - 20) / 2, platform.y - 20, 20, 20);
                 }
                 if (index % 10 === 0) {
                     ctx.font = '10px Arial';
@@ -273,7 +287,8 @@
                 velX: 0,
                 velY: 0,
                 jumping: false,
-                score: 0
+                score: 0,
+                starPower: false
             };
             platforms = [];
             for(let i = 0; i < 2000; i++) {
@@ -290,7 +305,8 @@
                     moveSpeed: Math.random() * 0.5 + 0.5,
                     minY: null,
                     maxY: null,
-                    direction: 1
+                    direction: 1,
+                    star: Math.random() < 0.05 ? { active: true } : null // 5% chance of a star
                 };
                 if (platform.moveUpDown) {
                     platform.minY = platform.y - 10;
