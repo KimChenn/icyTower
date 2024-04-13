@@ -25,7 +25,7 @@
         }
         #leaderboard {
             position: relative;
-            top: 40px; /* Adjusted for visibility within the game over screen */
+            top: 40px;
         }
         #leaderboard ol {
             list-style-type: none;
@@ -51,23 +51,12 @@
 
         const playerImg = new Image();
         playerImg.src = './female_runner.png';
-        playerImg.onload = () => console.log('Player image loaded');
-        playerImg.onerror = () => console.error('Error loading player image');
-
         const platformImg = new Image();
         platformImg.src = './Platform Tile Grass.png';
-        platformImg.onload = () => console.log('Platform image loaded');
-        platformImg.onerror = () => console.error('Error loading platform image');
-
         const enemyImg1 = new Image();
         enemyImg1.src = './axe.png';
-        enemyImg1.onload = () => console.log('Enemy type1 image loaded');
-        enemyImg1.onerror = () => console.error('Error loading enemy type1 image');
-
         const enemyImg2 = new Image();
         enemyImg2.src = './axe.png';
-        enemyImg2.onload = () => console.log('Enemy type2 image loaded');
-        enemyImg2.onerror = () => console.error('Error loading enemy type2 image');
 
         let gameRunning = true;
         let animationFrameId;
@@ -77,7 +66,7 @@
         const friction = 0.8;
         const baseJump = -10; // Base jump velocity
 
-        // Player
+        // Player setup
         let player = {
             x: canvas.width / 2,
             y: canvas.height - 150,
@@ -90,13 +79,10 @@
             score: 0
         };
 
-        // Enemies
-        const enemyTypes = ['Type1', 'Type2'];
-
-        // Platforms
+        // Platforms setup
         let platforms = [];
         for(let i = 0; i < 2000; i++) {
-            let platformWidth = Math.random() < 0.2 ? 150 : 100; // Wider platforms at 20% chance
+            let platformWidth = Math.random() < 0.2 ? 150 : 100;
             let platform = {
                 x: Math.random() * (canvas.width - platformWidth),
                 y: canvas.height - (80 * i) - 50,
@@ -104,11 +90,19 @@
                 height: 15,
                 falling: false,
                 timeOnPlatform: 0,
-                enemy: null
+                enemy: null,
+                moveUpDown: Math.random() < 0.06,
+                moveSpeed: Math.random() * 0.5 + 0.5,
+                minY: null,
+                maxY: null,
+                direction: 1
             };
-
-            if (Math.random() < 0.2) {
-                let type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+            if (platform.moveUpDown) {
+                platform.minY = platform.y - 10;
+                platform.maxY = platform.y + 10;
+            }
+            if (Math.random() < 0.2 && !platform.moveUpDown) {
+                let type = ['Type1', 'Type2'][Math.floor(Math.random() * 2)];
                 platform.enemy = {
                     type: type,
                     x: platform.x + platform.width / 2,
@@ -118,7 +112,6 @@
                     velX: type === 'Type2' ? 2 : 0,
                 };
             }
-
             platforms.push(platform);
         }
 
@@ -126,8 +119,9 @@
         let keys = [];
         window.addEventListener('keydown', function(e) {
             keys[e.keyCode] = true;
-            if (e.keyCode == 32 && !player.jumping) {
+            if (e.keyCode == 32 && !player.jumping) { // Space key for jump
                 player.jumping = true;
+                // Enhance jump speed based on horizontal movement
                 player.velY = baseJump - Math.abs(player.velX);
             }
         });
@@ -138,41 +132,44 @@
         function updateGame() {
             if (!gameRunning) return;
 
-            if (keys[39]) {
+            if (keys[39]) { // Right arrow
                 if (player.velX < player.speed) {
                     player.velX++;
                 }
-            }
-            if (keys[37]) {
+            } else if (keys[37]) { // Left arrow
                 if (player.velX > -player.speed) {
                     player.velX--;
                 }
+            } else {
+                player.velX *= friction; // Apply friction when no keys are pressed
             }
 
-            player.velX *= friction;
-            player.velY += gravity;
-
+            player.velY += gravity; // Apply gravity
             player.x += player.velX;
             player.y += player.velY;
 
+            // Screen scroll handling
             if (player.y < canvas.height / 4) {
-                player.score += Math.abs(player.velY);
-                player.y += Math.abs(player.velY);
+                let deltaY = canvas.height / 4 - player.y;
+                player.y = canvas.height / 4;
+                player.score += Math.floor(Math.abs(deltaY));
+
                 platforms.forEach(platform => {
-                    platform.y += Math.abs(player.velY);
+                    platform.y += deltaY;
                     if (platform.enemy) {
-                        platform.enemy.y += Math.abs(player.velY);
+                        platform.enemy.y += deltaY;
                     }
                 });
             }
 
+            // Screen boundaries for player
             if (player.x >= canvas.width - player.width) {
                 player.x = canvas.width - player.width;
             } else if (player.x <= 0) {
                 player.x = 0;
             }
 
-            if(player.y >= canvas.height - player.height){
+            if (player.y >= canvas.height - player.height) {
                 player.y = canvas.height - player.height;
                 player.jumping = false;
                 player.velY = 0;
@@ -189,12 +186,19 @@
                     player.jumping = false;
                     player.velY = 0;
                     player.y = platform.y - player.height;
-                    platform.timeOnPlatform += 1/60; // approximately 60 updates per second
-                    if (platform.timeOnPlatform >= 3) {
+                    platform.timeOnPlatform += 1/60;
+                    if (platform.timeOnPlatform >= 3 && !platform.falling) {
                         platform.falling = true;
                     }
                 } else {
                     platform.timeOnPlatform = 0;
+                }
+
+                if (platform.moveUpDown && !platform.falling) {
+                    if (platform.y <= platform.minY || platform.y >= platform.maxY) {
+                        platform.direction *= -1;
+                    }
+                    platform.y += platform.direction * platform.moveSpeed;
                 }
 
                 if (platform.falling) {
@@ -211,7 +215,6 @@
                     ) {
                         gameOver();
                     }
-
                     if (enemy.type === 'Type2') {
                         if (enemy.x <= platform.x || enemy.x + enemy.width >= platform.x + platform.width) {
                             enemy.velX *= -1;
@@ -222,31 +225,23 @@
             });
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw player with image
             ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-
-            // Draw platforms and enemies with images
             platforms.forEach((platform, index) => {
                 ctx.drawImage(platformImg, platform.x, platform.y, platform.width, platform.height);
-
                 if (platform.enemy) {
                     let enemy = platform.enemy;
                     let enemyImg = enemy.type === 'Type1' ? enemyImg1 : enemyImg2;
                     ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
                 }
-
                 if (index % 10 === 0) {
                     ctx.font = '10px Arial';
                     ctx.fillStyle = 'white';
                     ctx.fillText(index, platform.x + 5, platform.y + 10);
                 }
             });
-
             ctx.font = '16px Arial';
             ctx.fillStyle = 'black';
             ctx.fillText('Score: ' + Math.floor(player.score), 10, 20);
-
             animationFrameId = requestAnimationFrame(updateGame);
         }
 
@@ -260,12 +255,10 @@
 
         function updateLeaderboard(score) {
             let scores = JSON.parse(localStorage.getItem('scores')) || [];
-            if (!scores.includes(score)) {
-                scores.push(score);
-                scores.sort((a, b) => b - a);
-                scores = scores.slice(0, 10);
-                localStorage.setItem('scores', JSON.stringify(scores));
-            }
+            scores.push(score);
+            scores.sort((a, b) => b - a);
+            scores = scores.slice(0, 10);
+            localStorage.setItem('scores', JSON.stringify(scores));
             scoresList.innerHTML = scores.map(s => `<li>${s}</li>`).join('');
         }
 
@@ -284,7 +277,7 @@
             };
             platforms = [];
             for(let i = 0; i < 2000; i++) {
-                let platformWidth = Math.random() < 0.2 ? 150 : 100; // Wider platforms at 20% chance
+                let platformWidth = Math.random() < 0.2 ? 150 : 100;
                 let platform = {
                     x: Math.random() * (canvas.width - platformWidth),
                     y: canvas.height - (80 * i) - 50,
@@ -292,11 +285,19 @@
                     height: 15,
                     falling: false,
                     timeOnPlatform: 0,
-                    enemy: null
+                    enemy: null,
+                    moveUpDown: Math.random() < 0.06,
+                    moveSpeed: Math.random() * 0.5 + 0.5,
+                    minY: null,
+                    maxY: null,
+                    direction: 1
                 };
-
-                if (Math.random() < 0.25) {
-                    let type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+                if (platform.moveUpDown) {
+                    platform.minY = platform.y - 10;
+                    platform.maxY = platform.y + 10;
+                }
+                if (Math.random() < 0.2 && !platform.moveUpDown) {
+                    let type = ['Type1', 'Type2'][Math.floor(Math.random() * 2)];
                     platform.enemy = {
                         type: type,
                         x: platform.x + platform.width / 2,
@@ -306,7 +307,6 @@
                         velX: type === 'Type2' ? 2 : 0,
                     };
                 }
-
                 platforms.push(platform);
             }
             gameOverScreen.style.display = 'none';
