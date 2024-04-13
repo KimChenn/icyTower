@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer Game with Screen Scroll</title>
+    <title>Platformer Game with Screen Scroll and Images</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; }
-        #gameCanvas { background-color: #deb8de; }
+        #gameCanvas { background-color: #deb8de; background-image: url('./tilesetOpenGameBackground.png'); background-size: cover; }
         #gameOverScreen {
             display: none;
             position: absolute;
@@ -49,6 +49,26 @@
         const gameOverScreen = document.getElementById('gameOverScreen');
         const scoresList = document.getElementById('scoresList');
 
+        const playerImg = new Image();
+        playerImg.src = './female_runner.png';
+        playerImg.onload = () => console.log('Player image loaded');
+        playerImg.onerror = () => console.error('Error loading player image');
+
+        const platformImg = new Image();
+        platformImg.src = './Platform Tile Grass.png';
+        platformImg.onload = () => console.log('Platform image loaded');
+        platformImg.onerror = () => console.error('Error loading platform image');
+
+        const enemyImg1 = new Image();
+        enemyImg1.src = './axe.png';
+        enemyImg1.onload = () => console.log('Enemy type1 image loaded');
+        enemyImg1.onerror = () => console.error('Error loading enemy type1 image');
+
+        const enemyImg2 = new Image();
+        enemyImg2.src = './axe.png';
+        enemyImg2.onload = () => console.log('Enemy type2 image loaded');
+        enemyImg2.onerror = () => console.error('Error loading enemy type2 image');
+
         let gameRunning = true;
         let animationFrameId;
 
@@ -61,8 +81,8 @@
         let player = {
             x: canvas.width / 2,
             y: canvas.height - 150,
-            width: 20,
-            height: 30,
+            width: 30,
+            height: 40,
             speed: 5,
             velX: 0,
             velY: 0,
@@ -80,20 +100,20 @@
                 x: Math.random() * (canvas.width - 50),
                 y: canvas.height - (80 * i) - 50,
                 width: 100,
-                height: 10,
+                height: 15,
                 falling: false,
                 timeOnPlatform: 0,
                 enemy: null
             };
 
-            if (Math.random() < 0.1) {
+            if (Math.random() < 0.2) {
                 let type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                 platform.enemy = {
                     type: type,
                     x: platform.x + platform.width / 2,
                     y: platform.y - 20,
-                    width: 20,
-                    height: 20,
+                    width: 25,
+                    height: 25,
                     velX: type === 'Type2' ? 2 : 0,
                 };
             }
@@ -168,6 +188,12 @@
                     player.jumping = false;
                     player.velY = 0;
                     player.y = platform.y - player.height;
+                    platform.timeOnPlatform += 1/60; // approximately 60 updates per second
+                    if (platform.timeOnPlatform >= 3) {
+                        platform.falling = true;
+                    }
+                } else {
+                    platform.timeOnPlatform = 0;
                 }
 
                 if (platform.falling) {
@@ -196,21 +222,17 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = 'blue'; 
-            ctx.fillRect(player.x, player.y + 10, player.width, player.height - 10); 
-            ctx.beginPath();
-            ctx.arc(player.x + player.width / 2, player.y + 5, 10, 0, Math.PI * 2, true);
-            ctx.fillStyle = 'peachpuff'; 
-            ctx.fill();
+            // Draw player with image
+            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
 
+            // Draw platforms and enemies with images
             platforms.forEach((platform, index) => {
-                ctx.fillStyle = 'black';
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                ctx.drawImage(platformImg, platform.x, platform.y, platform.width, platform.height);
 
                 if (platform.enemy) {
                     let enemy = platform.enemy;
-                    ctx.fillStyle = enemy.type === 'Type1' ? 'red' : 'green';
-                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    let enemyImg = enemy.type === 'Type1' ? enemyImg1 : enemyImg2;
+                    ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
                 }
 
                 if (index % 10 === 0) {
@@ -251,8 +273,8 @@
             player = {
                 x: canvas.width / 2,
                 y: canvas.height - 150,
-                width: 20,
-                height: 30,
+                width: 30,
+                height: 40,
                 speed: 5,
                 velX: 0,
                 velY: 0,
@@ -265,7 +287,7 @@
                     x: Math.random() * (canvas.width - 50),
                     y: canvas.height - (80 * i) - 50,
                     width: 100,
-                    height: 10,
+                    height: 15,
                     falling: false,
                     timeOnPlatform: 0,
                     enemy: null
@@ -277,8 +299,8 @@
                         type: type,
                         x: platform.x + platform.width / 2,
                         y: platform.y - 20,
-                        width: 20,
-                        height: 20,
+                        width: 25,
+                        height: 25,
                         velX: type === 'Type2' ? 2 : 0,
                     };
                 }
